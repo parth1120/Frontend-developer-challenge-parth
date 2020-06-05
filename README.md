@@ -10,7 +10,7 @@ Step 2 - Install npm
 ### `npm install`
 Step 3 - Start npm
 ### `npm start`
-Runs the app in the development mode. Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Runs the app in the development mode. Open [http://localhost:3000] (http://localhost:3000) to view it in the browser.
 <br/><br/><br/>
 ## Features covered in YouTube Application developed -
 1 - Addition of You tube video urls<br/>
