@@ -1,115 +1,135 @@
 import React, { useState, useRef } from "react";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import ReactPlayer from "react-player";
 import "../App.css";
+import ReactPlayer from "react-player";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { regVideo } from './regex'
 
 export const VideoPlayer = () => {
 
-  const [links, setLinks] = useState([]);
-  const [videoUrl, setvideoUrl] = useState("");
+
+  const [youtubevideoUrl, setyoutubevideoUrl] = useState("");
+  const [playlislinks, setPlaylislinksLinks] = useState([]);
   const [hasError, setHasError] = useState(false);
+  const [alreadyAdded, setalreadyAdded] = useState(false);
 
-  var inputLink = useRef(null);
+  var enteredLink = useRef(null);
 
-  const removeLink = idx => {
-    const newLinks = [...links];
-    newLinks.splice(idx, 1);
-    setLinks(newLinks);
-  };
-
-  const handleKeydown = e => {
-    const val = e.target.value;
-    if (e.key === "Enter" && val) {
-      var p = /^(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
-      if (val.match(p)) {
+  const InputHandler = e => {
+    const linkValue = e.target.value;
+    setalreadyAdded(false)
+    if (e.key === "Enter" && linkValue) {
+      if (regVideo.test(linkValue)) {
         setHasError(false);
-        if (links.find(tag => tag === val)) return;
-        setLinks([...links, val]);
-        inputLink.value = null;
-        handlePlaylist(val);
+        if (playlislinks.find(tag => tag === linkValue)) {
+          setalreadyAdded(true)
+          return
+        } else {
+          setalreadyAdded(false)
+        }
+        setPlaylislinksLinks([...playlislinks, linkValue]);
+        enteredLink.value = null;
+        handlePlaylist(linkValue);
       } else {
         setHasError(true);
       }
     }
+    if (linkValue === "" || linkValue === null || linkValue === undefined) {
+      setHasError(false);
+      setalreadyAdded(false)
+    }
   };
 
-  const reorderPlaylist = (list, startIndex, endIndex) => {
+  const reorderVideos = (list, startIndex, endIndex) => {
     const result = list;
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
     return result;
   };
 
-  const onDragEnd = result => {
-    if (!result.destination) {
+  const onDragEnd = res => {
+    if (!res.destination) {
       return;
     }
-    const videoLinks = reorderPlaylist(
-      links,
-      result.source.index,
-      result.destination.index
+    const videoLinks = reorderVideos(
+      playlislinks,
+      res.source.index,
+      res.destination.index
     );
-    setLinks(videoLinks);
+    setPlaylislinksLinks(videoLinks);
   };
 
   const handlePlaylist = currentLink => {
-    setvideoUrl(currentLink);
+    setyoutubevideoUrl(currentLink);
   };
 
-  const onDeletePlaylist = async index => {
-    links.splice(index, 1);
-    setLinks(links);
+  const onVideoDelete = async index => {
+    playlislinks.splice(index, 1);
+    setPlaylislinksLinks(playlislinks);
 
     if (index === 0) {
-      handlePlaylist(links[0]);
+      handlePlaylist(playlislinks[0]);
     }
   };
 
   const onVideoEnd = () => {
-    const index = links.indexOf(videoUrl);
-    onDeletePlaylist(index);
-    handlePlaylist(links[0]);
+    const index = playlislinks.indexOf(youtubevideoUrl);
+    onVideoDelete(index);
+    handlePlaylist(playlislinks[0]);
   };
-  
+
+   // ---------------------------------Remove Video==================
+   const removeLink = id => {
+    const newLinks = [...playlislinks];
+    newLinks.splice(id, 1);
+    setPlaylislinksLinks(newLinks);
+  };
+   // ---------------------------------Remove Video End==================
+
+
   return (
     <div>
       <input
         type="text"
-        onKeyDown={handleKeydown}
+        onKeyDown={InputHandler}
         className="input-url"
         ref={c => {
-          inputLink = c;
+          enteredLink = c;
         }}
-        placeholder="Please add youtube link"
+        placeholder="Please add youtube link and press enter"
       />
+
       {hasError && (
         <span className="error">
-          Please add a valid youtube url ( eg :
-          https://www.youtube.com/watch?v=OulN7vTDq1I )
+          Invalid Youtube URL
+        </span>
+      )}
+      {alreadyAdded && (
+        <span className="error">
+          Youtube URL Aready Added
         </span>
       )}
       <div className="card">
         <div className="player-wrapper ">
-          {links.length ? (
+          {playlislinks.length ? (
             <ReactPlayer
               width="100%"
               height="100%"
               controls={true}
               className="react-player"
-              url={videoUrl}
+              url={youtubevideoUrl}
               playing={true}
               onEnded={() => onVideoEnd()}
             />
           ) : null}
         </div>
         <div className="playlist">
-          <h4 className="text">PLAYLISTS</h4>
+          <h4 className="text">Your Playlist</h4>
           <hr></hr>
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="droppable">
               {provided => (
                 <div {...provided.droppableProps} ref={provided.innerRef}>
-                  {links.map((videoLink, idx) => (
+                  {playlislinks.map((videoLink, idx) => (
                     <div key={idx}>
                       <Draggable
                         key={videoLink}
@@ -124,17 +144,12 @@ export const VideoPlayer = () => {
                           >
                             <div
                               onClick={() => handlePlaylist(videoLink)}
-                              className={`links ${videoLink ? "add-link" : ""}`}
+                              className={`playlislinks ${videoLink ? "add-link" : ""}`}
                             >
-                              {videoLink}
-                              <img
-                                src="../../close.png"
-                                className="delete"
-                                alt="delete"
-                                onClick={() => {
-                                  removeLink(idx);
-                                }}
-                              />
+                              {idx + 1}) {videoLink}
+                              <div className="delete" onClick={() => {
+                                removeLink(idx);
+                              }}>&times;</div>
                             </div>
                           </div>
                         )}
